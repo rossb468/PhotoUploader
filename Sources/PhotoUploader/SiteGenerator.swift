@@ -11,8 +11,9 @@ extension String {
 
 /// Renders the static photography/ site (index + one page per photo) from
 /// the current post list. Every call fully regenerates all HTML. Detail
-/// pages are flat files at photos/<slug>.html (not photos/<slug>/index.html)
-/// — rebuild() cleans up any leftover folders from the old scheme.
+/// pages are flat top-level files at photography/<slug>.html (sibling to
+/// index.html) — rebuild() cleans up leftovers from older schemes
+/// (photos/<slug>/index.html, then photos/<slug>.html).
 enum SiteGenerator {
     static let siteTitle = "Photography — Ross Bower"
     static let mainSiteURL = "https://rossbower.com"
@@ -32,9 +33,16 @@ enum SiteGenerator {
         let root = siteRoot(repoPath: repoPath)
         try FileManager.default.createDirectory(at: root.appendingPathComponent("assets"), withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: root.appendingPathComponent("data"), withIntermediateDirectories: true)
-        let photosDir = root.appendingPathComponent("photos")
-        try FileManager.default.createDirectory(at: photosDir, withIntermediateDirectories: true)
         bootstrapCSSIfNeeded(root: root)
+
+        // One-time cleanup: photo pages used to live under photography/photos/
+        // (first as <slug>/index.html, later as <slug>.html); they're now
+        // flat at photography/<slug>.html directly, so that folder is
+        // entirely obsolete.
+        let legacyPhotosDir = root.appendingPathComponent("photos")
+        if FileManager.default.fileExists(atPath: legacyPhotosDir.path) {
+            try? FileManager.default.removeItem(at: legacyPhotosDir)
+        }
 
         let posts = sortedPosts(data.posts)
         try renderIndex(posts, root: root)
@@ -42,16 +50,15 @@ enum SiteGenerator {
             try renderDetail(post, posts: posts, root: root)
         }
 
-        // Clean up stale output: leftover folders from the old
-        // photos/<slug>/index.html scheme, and .html files for posts that
-        // no longer exist.
+        // Remove stray top-level .html files for posts that no longer
+        // exist, without ever touching index.html or non-HTML entries
+        // (assets/, data/, images/).
         let validFiles = Set(posts.map { "\($0.slug).html" })
-        if let children = try? FileManager.default.contentsOfDirectory(at: photosDir, includingPropertiesForKeys: [.isDirectoryKey]) {
+        if let children = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.isDirectoryKey]) {
             for child in children {
                 let isDir = (try? child.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-                if isDir {
-                    try? FileManager.default.removeItem(at: child)
-                } else if !validFiles.contains(child.lastPathComponent) {
+                guard !isDir, child.pathExtension == "html", child.lastPathComponent != "index.html" else { continue }
+                if !validFiles.contains(child.lastPathComponent) {
                     try? FileManager.default.removeItem(at: child)
                 }
             }
@@ -69,7 +76,7 @@ enum SiteGenerator {
                 let tint = post.palette.ambient?.bg2 ?? "#222"
                 let title = (post.title.isEmpty ? "Untitled" : post.title).htmlEscaped
                 return """
-                            <a class="tile" href="photos/\(post.slug).html" style="--tint:\(tint)">
+                            <a class="tile" href="\(post.slug).html" style="--tint:\(tint)">
                                 <img src="\(post.thumb)" alt="\(title)" loading="lazy">
                                 <span class="tile-caption">\(title)</span>
                             </a>
@@ -188,7 +195,7 @@ enum SiteGenerator {
         if let original = post.original { links.append(("Full Size", original, "original uploaded file, full resolution \(post.width)\u{00d7}\(post.height)")) }
 
         let items = links.map { label, href, hint in
-            "                <a class=\"download-link\" href=\"../\(href)\" download title=\"\(hint.htmlEscaped)\">\(label)</a>"
+            "                <a class=\"download-link\" href=\"\(href)\" download title=\"\(hint.htmlEscaped)\">\(label)</a>"
         }.joined(separator: "\n")
 
         return """
@@ -234,7 +241,7 @@ enum SiteGenerator {
             let title = (p.title.isEmpty ? "Untitled" : p.title).htmlEscaped
             moreItems.append("""
                             <a class="more-tile" href="\(p.slug).html">
-                                <img src="../\(p.thumb)" alt="\(title)" loading="lazy">
+                                <img src="\(p.thumb)" alt="\(title)" loading="lazy">
                             </a>
             """)
             if moreItems.count == 6 { break }
@@ -255,21 +262,21 @@ enum SiteGenerator {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>\(pageTitle) — \(siteTitle)</title>
-        <link rel="stylesheet" href="../assets/site.css">
+        <link rel="stylesheet" href="assets/site.css">
         <style>
             body { --bg1: \(ambient.bg1); --bg2: \(ambient.bg2); --accent: \(ambient.accent); --ambient-text: \(ambient.text); }
         </style>
         </head>
         <body class="detail-page">
             <header class="site-header">
-                <a class="back-link" href="../index.html">&larr; Photography</a>
+                <a class="back-link" href="index.html">&larr; Photography</a>
                 <a class="back-link" href="\(mainSiteURL)">rossbower.com &rarr;</a>
             </header>
             <main class="detail">
                 <div class="photo-stage">
                     \(prevLink)
                     <figure class="detail-figure">
-                        <img src="../\(post.full)" alt="\(post.title.htmlEscaped)">
+                        <img src="\(post.full)" alt="\(post.title.htmlEscaped)">
                     </figure>
                     \(nextLink)
                 </div>
@@ -317,7 +324,7 @@ enum SiteGenerator {
 
         """
 
-        try doc.write(to: root.appendingPathComponent("photos/\(post.slug).html"), atomically: true, encoding: .utf8)
+        try doc.write(to: root.appendingPathComponent("\(post.slug).html"), atomically: true, encoding: .utf8)
     }
 
     // MARK: - CSS bootstrap
@@ -413,44 +420,38 @@ enum SiteGenerator {
     .detail { max-width: 1400px; margin: 0 auto; padding: 0 24px 20px; }
 
     .photo-stage {
-        position: relative;
         display: flex;
         align-items: center;
-        width: fit-content;
-        max-width: 100%;
+        justify-content: center;
+        gap: 20px;
         margin: 0 auto 24px;
     }
 
-    .detail-figure { text-align: center; }
+    .detail-figure { flex: 0 1 auto; min-width: 0; text-align: center; }
     .detail-figure img {
-        display: block; width: auto; height: auto;
-        max-width: 82vw; max-height: 90vh;
+        display: block; margin: 0 auto;
+        max-width: 100%; height: auto;
+        max-height: 90vh;
         border-radius: 6px; box-shadow: 0 24px 60px rgba(0,0,0,0.45);
     }
 
     .stage-nav {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
+        flex: 0 0 auto;
         width: 64px;
         height: 64px;
         border-radius: 50%;
-        background: rgba(0,0,0,0.4);
-        color: rgba(255,255,255,0.92);
+        background: rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.85);
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 40px;
         line-height: 1;
         font-family: Georgia, serif;
-        backdrop-filter: blur(6px);
-        transition: background 0.15s, transform 0.15s;
-        z-index: 2;
+        transition: background 0.15s, color 0.15s, transform 0.15s;
     }
-    .stage-nav:hover { background: rgba(0,0,0,0.65); transform: translateY(-50%) scale(1.06); }
-    .stage-nav.disabled { opacity: 0.2; pointer-events: none; }
-    .stage-nav-prev { left: 8px; }
-    .stage-nav-next { right: 8px; }
+    .stage-nav:hover { background: rgba(255,255,255,0.14); color: #fff; transform: scale(1.06); }
+    .stage-nav.disabled { opacity: 0.15; pointer-events: none; }
 
     .detail-body { background: rgba(0,0,0,0.28); backdrop-filter: blur(6px); border-radius: 8px; padding: 24px 28px 28px; }
     .detail-body h1 { font-size: 1.8em; margin-bottom: 8px; }
