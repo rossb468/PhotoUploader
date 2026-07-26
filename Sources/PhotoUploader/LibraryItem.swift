@@ -12,10 +12,22 @@ enum ItemStatus: Equatable {
     case failed(String)
 }
 
+/// A snapshot of everything a user can actually change — title/caption/date
+/// plus which EXIF fields are set to publish. Comparing two snapshots is how
+/// "Save Changes" knows whether anything is actually different, including
+/// the case where a user toggles a checkbox and toggles it back.
+struct MetadataSnapshot: Equatable {
+    var title: String
+    var caption: String
+    var date: String
+    var publishedKeys: Set<String>
+}
+
 /// One photo shown in the app — either an already-published post loaded from
 /// the site's photos.json, or a not-yet-published photo just added locally.
-/// The same editable metadata fields apply either way; only which backend
-/// action applies (publish vs. save-in-place) differs.
+/// EXIF values themselves are read-only (extracted automatically, never
+/// typed by a user); the only thing a user edits is title/caption/date and
+/// which of the extracted fields get published.
 struct LibraryItem: Identifiable, Equatable {
     let id: UUID
     var kind: ItemKind
@@ -26,20 +38,18 @@ struct LibraryItem: Identifiable, Equatable {
     var thumbFileURL: URL?
     /// Absolute file URL to the on-site full-size image. Only set for .existing items.
     var fullFileURL: URL?
+    /// Absolute file URL to the preserved original upload, if the post has
+    /// one. Only set for .existing items.
+    var originalFileURL: URL?
 
     var title: String = ""
     var caption: String = ""
     var date: Date = Date()
 
-    var dateTaken: String = ""
-    var make: String = ""
-    var model: String = ""
-    var lens: String = ""
-    var aperture: String = ""
-    var shutter: String = ""
-    var iso: String = ""
-    var focalLength: String = ""
-    var location: String = ""
+    /// Every EXIF/camera/GPS field this photo actually has, in display order.
+    var metadataFields: [MetadataField] = []
+    /// Which of those fields' keys are currently checked to publish.
+    var publishedKeys: Set<String> = []
 
     var width: Int?
     var height: Int?
@@ -48,6 +58,11 @@ struct LibraryItem: Identifiable, Equatable {
     var exifLoaded = false
 
     var status: ItemStatus = .idle
+
+    /// Captured once, right after an existing post's data loads (or right
+    /// after a successful save). `isDirty` compares the current state
+    /// against this, so Save Changes only lights up on a real difference.
+    var baseline: MetadataSnapshot?
 
     init(sourceURL: URL) {
         self.id = UUID()
@@ -65,33 +80,59 @@ struct LibraryItem: Identifiable, Equatable {
         self.date = LibraryItem.parseDate(post.date) ?? Date()
         self.exifLoaded = true
 
-        let exif = post.exif
-        self.make = exif.make ?? ""
-        self.model = exif.model ?? ""
-        self.lens = exif.lens ?? ""
-        self.aperture = exif.aperture ?? ""
-        self.shutter = exif.shutter ?? ""
-        self.iso = exif.iso ?? ""
-        self.focalLength = exif.focal_length ?? ""
-        self.dateTaken = exif.date_taken ?? ""
-        self.location = exif.location ?? ""
+        self.metadataFields = post.exif.fields
+        self.publishedKeys = Set(post.exif.fields.map(\.key).filter { post.exif.isPublished($0) })
 
         let siteRoot = URL(fileURLWithPath: repoPath).appendingPathComponent("photography")
         self.thumbFileURL = siteRoot.appendingPathComponent(post.thumb)
         self.fullFileURL = siteRoot.appendingPathComponent(post.full)
+        if let original = post.original {
+            self.originalFileURL = siteRoot.appendingPathComponent(original)
+        }
+
+        self.baseline = self.currentSnapshot
     }
 
-    /// Builds the metadata bundle PhotoEngine's add/update calls need,
-    /// straight from this item's current (possibly user-edited) fields.
+    /// Applies freshly-extracted EXIF to a new (not-yet-published) item,
+    /// defaulting the publish set to just the fields the site originally
+    /// showed — everything else the app can now dig up starts unchecked.
+    mutating func applyExtractedExif(_ extracted: ExtractedExif) {
+        metadataFields = extracted.fields
+        publishedKeys = Set(extracted.fields.map(\.key)).intersection(defaultPublishedKeys)
+        width = extracted.width
+        height = extracted.height
+        if let dt = extracted.value("date_taken"), let parsed = LibraryItem.parseDate(dt) {
+            date = parsed
+        }
+    }
+
+    func fieldValue(_ key: String) -> String {
+        metadataFields.first { $0.key == key }?.value ?? ""
+    }
+
+    /// Builds the metadata bundle PhotoEngine's add/update calls need.
     func metadataInput() -> PhotoMetadataInput {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
-        return PhotoMetadataInput(
-            title: title, caption: caption, date: df.string(from: date),
-            make: make, model: model, lens: lens, aperture: aperture,
-            shutter: shutter, iso: iso, focalLength: focalLength,
-            dateTaken: dateTaken, location: location
-        )
+        var published: [String: Bool] = [:]
+        for field in metadataFields {
+            published[field.key] = publishedKeys.contains(field.key)
+        }
+        return PhotoMetadataInput(title: title, caption: caption, date: df.string(from: date), published: published)
+    }
+
+    var currentSnapshot: MetadataSnapshot {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        return MetadataSnapshot(title: title, caption: caption, date: df.string(from: date), publishedKeys: publishedKeys)
+    }
+
+    /// True only for existing posts with unsaved edits. New (unpublished)
+    /// items have no baseline, so this is always false for them — they use
+    /// a separate "Publish" action instead of "Save Changes".
+    var isDirty: Bool {
+        guard let baseline else { return false }
+        return currentSnapshot != baseline
     }
 
     var displayTitle: String {
@@ -112,6 +153,15 @@ struct LibraryItem: Identifiable, Equatable {
         switch kind {
         case .new: return sourceURL
         case .existing: return thumbFileURL
+        }
+    }
+
+    /// The best file to show File Info for: the on-disk source before
+    /// publishing, or the preserved original / Large JPEG once published.
+    var fileInfoURL: URL? {
+        switch kind {
+        case .new: return sourceURL
+        case .existing: return originalFileURL ?? fullFileURL
         }
     }
 

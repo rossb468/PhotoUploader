@@ -141,22 +141,29 @@ enum SiteGenerator {
         return chips.joined(separator: "\n")
     }
 
+    /// Make + Model combine into one "Camera" row and Location gets its own
+    /// map-linked row (both matching the site's pre-existing design); every
+    /// other published field — however many there are — gets a plain row,
+    /// so a user checking a box for a field this function's never heard of
+    /// still shows up correctly.
     private static func renderExif(_ exif: PostExif) -> String {
-        var fields: [(String, String)] = []
-        let camera = [exif.make, exif.model].compactMap { $0 }.joined(separator: " ")
-        if !camera.isEmpty { fields.append(("Camera", camera)) }
-        if let v = exif.lens { fields.append(("Lens", v)) }
-        if let v = exif.aperture { fields.append(("Aperture", v)) }
-        if let v = exif.shutter { fields.append(("Shutter", v)) }
-        if let v = exif.iso { fields.append(("ISO", v)) }
-        if let v = exif.focal_length { fields.append(("Focal length", v)) }
-        if let v = exif.date_taken { fields.append(("Taken", v)) }
-
-        var rows = fields.map { key, value in
-            "                <div class=\"exif-item\"><span class=\"exif-label\">\(key)</span><span>\(value.htmlEscaped)</span></div>"
+        func row(_ label: String, _ value: String) -> String {
+            "                <div class=\"exif-item\"><span class=\"exif-label\">\(label.htmlEscaped)</span><span>\(value.htmlEscaped)</span></div>"
         }
 
-        if let location = exif.location {
+        var rows: [String] = []
+
+        let makePart = exif.isPublished("make") ? exif.value("make") : nil
+        let modelPart = exif.isPublished("model") ? exif.value("model") : nil
+        let camera = [makePart, modelPart].compactMap { $0 }.joined(separator: " ")
+        if !camera.isEmpty { rows.append(row("Camera", camera)) }
+
+        for field in exif.fields where field.key != "make" && field.key != "model" && field.key != "location" {
+            guard exif.isPublished(field.key) else { continue }
+            rows.append(row(field.label, field.value))
+        }
+
+        if exif.isPublished("location"), let location = exif.value("location") {
             let mapsURL = "https://maps.apple.com/?ll=" + location.replacingOccurrences(of: " ", with: "")
             rows.append(
                 "                <div class=\"exif-item\"><span class=\"exif-label\">Location</span>"
@@ -200,7 +207,8 @@ enum SiteGenerator {
 
         let titleHTML = post.title.isEmpty ? "" : "<h1>\(post.title.htmlEscaped)</h1>"
         let captionHTML = post.caption.isEmpty ? "" : "<p class=\"caption\">\(post.caption.htmlEscaped)</p>"
-        let dateDisplay = String((post.exif.date_taken ?? post.date).prefix(10))
+        let publishedDateTaken = post.exif.isPublished("date_taken") ? post.exif.value("date_taken") : nil
+        let dateDisplay = String((publishedDateTaken ?? post.date).prefix(10))
         let exifHTML = renderExif(post.exif)
         let swatchHTML = renderSwatchRow(post)
         let downloadHTML = renderDownloads(post)

@@ -16,6 +16,13 @@ struct MetadataFormView: View {
 
     @State private var showingDeleteConfirm = false
 
+    /// Groups render in this order; any group name not listed here (there
+    /// shouldn't be one, but metadata is open-ended) falls in afterward.
+    private static let groupOrder = ["Camera", "Exposure", "Date", "Location"]
+    private static let groupIcons: [String: String] = [
+        "Camera": "camera", "Exposure": "dial.medium", "Date": "calendar", "Location": "location",
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
             preview
@@ -28,59 +35,41 @@ struct MetadataFormView: View {
                         .lineLimit(2...5)
                         .multilineTextAlignment(.leading)
                         .textFieldStyle(.roundedBorder)
+                    DatePicker("Post Date", selection: $item.date, displayedComponents: .date)
                 } header: {
                     Label("Description", systemImage: "text.alignleft")
                 }
 
-                Section {
-                    DatePicker("Post Date", selection: $item.date, displayedComponents: .date)
-                    TextField("Date Taken", text: $item.dateTaken, prompt: Text("2026-07-20 14:30:00"))
-                        .textFieldStyle(.roundedBorder)
-                } header: {
-                    Label("Date", systemImage: "calendar")
-                }
-
-                Section {
-                    TextField("Make", text: $item.make, prompt: Text("Camera make"))
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Model", text: $item.model, prompt: Text("Camera model"))
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Lens", text: $item.lens, prompt: Text("Lens"))
-                        .textFieldStyle(.roundedBorder)
-                } header: {
-                    Label("Camera", systemImage: "camera")
-                }
-
-                Section {
-                    TextField("Aperture", text: $item.aperture, prompt: Text("f/2.8"))
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Shutter Speed", text: $item.shutter, prompt: Text("1/500s"))
-                        .textFieldStyle(.roundedBorder)
-                    TextField("ISO", text: $item.iso, prompt: Text("ISO 200"))
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Focal Length", text: $item.focalLength, prompt: Text("35mm"))
-                        .textFieldStyle(.roundedBorder)
-                } header: {
-                    Label("Exposure", systemImage: "dial.medium")
-                }
-
-                Section {
-                    TextField("Coordinates", text: $item.location, prompt: Text("40.71, -74.01"))
-                        .textFieldStyle(.roundedBorder)
-                } header: {
-                    Label("Location", systemImage: "location")
-                } footer: {
-                    if !item.location.isEmpty {
-                        Text("This is published on the photo's page. Clear it if you'd rather not share where it was taken.")
+                ForEach(orderedGroups, id: \.self) { group in
+                    Section {
+                        ForEach(fields(in: group)) { field in
+                            MetadataCheckRow(label: field.label, value: field.value, isPublished: publishBinding(for: field.key))
+                        }
+                    } header: {
+                        Label(group, systemImage: Self.groupIcons[group] ?? "tag")
+                    } footer: {
+                        if group == "Location" && fields(in: group).contains(where: { $0.key == "location" }) {
+                            Text("Published on the photo's page unless you uncheck it — worth knowing if you'd rather not share where it was taken.")
+                        }
                     }
                 }
 
-                if let w = item.width, let h = item.height {
+                if !item.metadataFields.isEmpty {
+                    Text("Extracted automatically and read-only. Check a field to publish it on the photo's page — only what the site showed before is checked by default.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !fileInfoFields.isEmpty {
                     Section {
-                        LabeledContent("Dimensions", value: "\(w) × \(h)")
-                        LabeledContent("File", value: item.sourceURL?.lastPathComponent ?? item.displayTitle)
+                        ForEach(fileInfoFields) { field in
+                            LabeledContent(field.label, value: field.value)
+                                .textSelection(.enabled)
+                        }
                     } header: {
                         Label("File Info", systemImage: "info.circle")
+                    } footer: {
+                        Text("For your reference only — never published.")
                     }
                 }
             }
@@ -104,6 +93,39 @@ struct MetadataFormView: View {
         } message: {
             Text("This removes its page and images from photography/. This can't be undone from within the app.")
         }
+    }
+
+    // MARK: - Grouping
+
+    private var orderedGroups: [String] {
+        let present = Set(item.metadataFields.map(\.group))
+        let known = Self.groupOrder.filter { present.contains($0) }
+        let unknown = present.subtracting(Self.groupOrder).sorted()
+        return known + unknown
+    }
+
+    private func fields(in group: String) -> [MetadataField] {
+        item.metadataFields.filter { $0.group == group }
+    }
+
+    private func publishBinding(for key: String) -> Binding<Bool> {
+        Binding(
+            get: { item.publishedKeys.contains(key) },
+            set: { newValue in
+                if newValue {
+                    item.publishedKeys.insert(key)
+                } else {
+                    item.publishedKeys.remove(key)
+                }
+            }
+        )
+    }
+
+    // MARK: - File Info (local only, never published)
+
+    private var fileInfoFields: [MetadataField] {
+        guard let url = item.fileInfoURL else { return [] }
+        return FileInfoReader.read(url: url, width: item.width, height: item.height)
     }
 
     private var preview: some View {
@@ -143,6 +165,7 @@ struct MetadataFormView: View {
                     Label("Save Changes", systemImage: "checkmark")
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!item.isDirty)
             } else {
                 Button {
                     onPublish()
@@ -162,5 +185,25 @@ struct MetadataFormView: View {
             .disabled(isLast)
         }
         .padding(12)
+    }
+}
+
+/// One read-only extracted metadata value with a checkbox controlling
+/// whether it publishes.
+private struct MetadataCheckRow: View {
+    let label: String
+    let value: String
+    @Binding var isPublished: Bool
+
+    var body: some View {
+        Toggle(isOn: $isPublished) {
+            HStack {
+                Text(label)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(value)
+            }
+        }
+        .toggleStyle(.checkbox)
     }
 }

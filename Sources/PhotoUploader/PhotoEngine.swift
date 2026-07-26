@@ -103,21 +103,28 @@ enum PhotoEngine {
         ExifReader.read(from: sourceURL)
     }
 
-    // MARK: - Applying editable metadata onto a stored EXIF dict
+    // MARK: - Applying which EXIF fields should publish
 
-    private static func applyMetadata(_ exif: inout PostExif, _ input: PhotoMetadataInput) {
-        func set(_ value: String, _ keyPath: WritableKeyPath<PostExif, String?>) {
-            exif[keyPath: keyPath] = value.isEmpty ? nil : value
-        }
-        set(input.make, \.make)
-        set(input.model, \.model)
-        set(input.lens, \.lens)
-        set(input.aperture, \.aperture)
-        set(input.shutter, \.shutter)
-        set(input.iso, \.iso)
-        set(input.focalLength, \.focal_length)
-        set(input.dateTaken, \.date_taken)
-        set(input.location, \.location)
+    /// EXIF values are never user-edited, so there's nothing to write back
+    /// except which fields the user chose to publish.
+    private static func applyPublishFlags(_ exif: inout PostExif, _ input: PhotoMetadataInput) {
+        exif.published = input.published
+    }
+
+    /// Re-extracts EXIF from a post's preserved original upload and
+    /// overwrites the stored fields, keeping the user's publish-flag choices
+    /// intact (matched up by field key). Self-heals stale formatting from
+    /// before a rounding/parsing fix shipped (e.g. an un-rounded aperture),
+    /// and picks up any newly-supported fields this version of the app can
+    /// extract that an older version couldn't — but only for posts that
+    /// still have their original file; there's nothing to refresh from for
+    /// older posts where the source was never kept.
+    private static func refreshExifValuesFromOriginal(_ post: inout Post, repoPath: String) {
+        guard let originalPath = post.original else { return }
+        let originalURL = SiteGenerator.siteRoot(repoPath: repoPath).appendingPathComponent(originalPath)
+        guard FileManager.default.fileExists(atPath: originalURL.path) else { return }
+
+        post.exif.fields = ExifReader.read(from: originalURL).fields
     }
 
     // MARK: - Publishing a new photo
@@ -137,12 +144,8 @@ enum PhotoEngine {
         let processed = try ImageProcessor.process(sourceURL: sourceURL, slug: slug, siteRoot: root)
         let palette = ColorPalette.buildPalette(from: processed.fullImage)
 
-        var exif = PostExif(
-            make: extractedExif.make, model: extractedExif.model, lens: extractedExif.lens,
-            aperture: extractedExif.aperture, shutter: extractedExif.shutter, iso: extractedExif.iso,
-            focal_length: extractedExif.focalLength, date_taken: extractedExif.dateTaken, location: extractedExif.location
-        )
-        applyMetadata(&exif, input)
+        var exif = PostExif(fields: extractedExif.fields)
+        applyPublishFlags(&exif, input)
 
         let post = Post(
             slug: slug,
@@ -178,7 +181,8 @@ enum PhotoEngine {
         if !input.date.isEmpty {
             data.posts[idx].date = input.date
         }
-        applyMetadata(&data.posts[idx].exif, input)
+        refreshExifValuesFromOriginal(&data.posts[idx], repoPath: repoPath)
+        applyPublishFlags(&data.posts[idx].exif, input)
 
         if data.posts[idx].medium == nil || data.posts[idx].small == nil {
             let root = SiteGenerator.siteRoot(repoPath: repoPath)

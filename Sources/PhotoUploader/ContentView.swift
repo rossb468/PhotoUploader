@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var isPublishingAll = false
     @State private var publishAllProgress = 0
 
+    @ObservedObject private var dropCoordinator = DropCoordinator.shared
+
     var body: some View {
         VStack(spacing: 0) {
             headerBar
@@ -23,6 +25,12 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 920, minHeight: 640)
+        .overlay {
+            if isDropTargeted {
+                dropOverlay
+            }
+        }
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
         .onAppear {
             repoPath = RepoLocator.resolvedRepoPath()
             if !hasLoadedLibrary {
@@ -30,6 +38,28 @@ struct ContentView: View {
                 loadLibrary()
             }
         }
+        .onChange(of: dropCoordinator.incomingURLs) { newValue in
+            guard !newValue.isEmpty else { return }
+            addDrafts(from: newValue)
+            dropCoordinator.incomingURLs = []
+        }
+    }
+
+    /// Shown while dragging files anywhere over the window — the whole
+    /// window (and the Dock icon, via AppDelegate) accepts photo drops, not
+    /// just the Add Photos button.
+    private var dropOverlay: some View {
+        ZStack {
+            Color.accentColor.opacity(0.12)
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 3, dash: [8]))
+                .padding(16)
+            Label("Drop photos to add them", systemImage: "photo.badge.plus")
+                .font(.title2)
+                .padding(20)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+        }
+        .allowsHitTesting(false)
     }
 
     // MARK: - Derived collections
@@ -59,7 +89,6 @@ struct ContentView: View {
             } label: {
                 Label("Add Photos", systemImage: "plus")
             }
-            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
 
             if isPublishingAll {
                 ProgressView(value: Double(publishAllProgress), total: Double(max(newItems.count, 1)))
@@ -75,7 +104,6 @@ struct ContentView: View {
             }
         }
         .padding(12)
-        .background(isDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
     }
 
     private var repoRow: some View {
@@ -242,20 +270,7 @@ struct ContentView: View {
             let info = PhotoEngine.fetchExif(sourceURL: sourceURL)
             DispatchQueue.main.async {
                 guard let idx2 = items.firstIndex(where: { $0.id == id }) else { return }
-                items[idx2].make = info.make ?? ""
-                items[idx2].model = info.model ?? ""
-                items[idx2].lens = info.lens ?? ""
-                items[idx2].aperture = info.aperture ?? ""
-                items[idx2].shutter = info.shutter ?? ""
-                items[idx2].iso = info.iso ?? ""
-                items[idx2].focalLength = info.focalLength ?? ""
-                items[idx2].dateTaken = info.dateTaken ?? ""
-                items[idx2].location = info.location ?? ""
-                items[idx2].width = info.width
-                items[idx2].height = info.height
-                if let dt = info.dateTaken, let parsed = LibraryItem.parseDate(dt) {
-                    items[idx2].date = parsed
-                }
+                items[idx2].applyExtractedExif(info)
             }
         }
     }
@@ -306,13 +321,20 @@ struct ContentView: View {
         let apply: () -> Void
         do {
             let slug = try PhotoEngine.addPhoto(sourceURL: sourceURL, input: snapshot.metadataInput(), repoPath: repoPath)
+            let publishedPost = PhotoEngine.listPhotos(repoPath: repoPath).first { $0.slug == slug }
             apply = {
                 guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
-                items[idx].kind = .existing(slug: slug)
-                let siteRoot = URL(fileURLWithPath: repoPath).appendingPathComponent("photography")
-                items[idx].thumbFileURL = siteRoot.appendingPathComponent("images/thumb/\(slug).jpg")
-                items[idx].fullFileURL = siteRoot.appendingPathComponent("images/full/\(slug).jpg")
-                items[idx].status = .done(message: "Published")
+                if let publishedPost {
+                    // Rebuild from the persisted post so every derived field
+                    // (thumb/full/original URLs, metadata, publish flags,
+                    // dirty-tracking baseline) matches what's actually on disk.
+                    var republished = LibraryItem(existing: publishedPost, repoPath: repoPath)
+                    republished.status = .done(message: "Published")
+                    items[idx] = republished
+                } else {
+                    items[idx].kind = .existing(slug: slug)
+                    items[idx].status = .done(message: "Published")
+                }
             }
         } catch {
             let message = error.localizedDescription
@@ -341,6 +363,7 @@ struct ContentView: View {
                 DispatchQueue.main.async {
                     guard let idx2 = items.firstIndex(where: { $0.id == id }) else { return }
                     items[idx2].status = .done(message: "Saved")
+                    items[idx2].baseline = items[idx2].currentSnapshot
                 }
             } catch {
                 let message = error.localizedDescription

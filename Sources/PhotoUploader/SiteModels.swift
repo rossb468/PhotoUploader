@@ -27,16 +27,101 @@ struct Palette: Codable, Equatable {
     var ambient: Ambient?
 }
 
+/// One piece of extracted metadata — a camera setting, a date, a GPS value,
+/// anything ImageIO can pull out of a photo. `key` is a stable identifier
+/// (e.g. "focal_length_35mm") independent of the human-readable `label`, so
+/// renaming a label later doesn't orphan a user's publish choice for it.
+struct MetadataField: Codable, Equatable, Identifiable, Hashable {
+    var key: String
+    var group: String
+    var label: String
+    var value: String
+    var id: String { key }
+}
+
+/// The 9 fields the site showed before this became an open-ended list —
+/// still the default "on" set for freshly-extracted metadata, per the
+/// original design (show everything, but only these are pre-checked).
+let defaultPublishedKeys: Set<String> = [
+    "make", "model", "lens", "aperture", "shutter", "iso", "focal_length", "date_taken", "location",
+]
+
 struct PostExif: Codable, Equatable {
-    var make: String?
-    var model: String?
-    var lens: String?
-    var aperture: String?
-    var shutter: String?
-    var iso: String?
-    var focal_length: String?
-    var date_taken: String?
-    var location: String?
+    /// Every field extracted from the photo, in display order.
+    var fields: [MetadataField]
+
+    /// Which field keys actually render on the public page. A key missing
+    /// from this dict means "not published" — the default for anything
+    /// beyond the original 9 fields, which get explicit `true` entries at
+    /// publish time instead of relying on a fallback default here.
+    var published: [String: Bool]?
+
+    init(fields: [MetadataField] = [], published: [String: Bool]? = nil) {
+        self.fields = fields
+        self.published = published
+    }
+
+    func isPublished(_ key: String) -> Bool {
+        published?[key] ?? false
+    }
+
+    func value(_ key: String) -> String? {
+        fields.first { $0.key == key }?.value
+    }
+
+    // MARK: - Codable, with migration from the old named-property schema
+
+    private enum CodingKeys: String, CodingKey {
+        case fields, published
+        // Legacy (pre-dynamic-fields) keys, decode-only.
+        case make, model, lens, aperture, shutter, iso, focal_length, date_taken, location
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+
+        if let existingFields = try c.decodeIfPresent([MetadataField].self, forKey: .fields) {
+            self.fields = existingFields
+            self.published = try c.decodeIfPresent([String: Bool].self, forKey: .published)
+            return
+        }
+
+        // Legacy shape: synthesize fields from the old named string properties.
+        var migrated: [MetadataField] = []
+        var legacyKeysPresent: [String] = []
+        func addLegacy(_ codingKey: CodingKeys, _ group: String, _ label: String, _ metaKey: String) {
+            if let value = (try? c.decodeIfPresent(String.self, forKey: codingKey)) ?? nil, !value.isEmpty {
+                migrated.append(MetadataField(key: metaKey, group: group, label: label, value: value))
+                legacyKeysPresent.append(metaKey)
+            }
+        }
+        addLegacy(.make, "Camera", "Make", "make")
+        addLegacy(.model, "Camera", "Model", "model")
+        addLegacy(.lens, "Camera", "Lens", "lens")
+        addLegacy(.aperture, "Exposure", "Aperture", "aperture")
+        addLegacy(.shutter, "Exposure", "Shutter Speed", "shutter")
+        addLegacy(.iso, "Exposure", "ISO", "iso")
+        addLegacy(.focal_length, "Exposure", "Focal Length", "focal_length")
+        addLegacy(.date_taken, "Date", "Date Taken", "date_taken")
+        addLegacy(.location, "Location", "Coordinates", "location")
+        self.fields = migrated
+
+        if let existingPublished = try c.decodeIfPresent([String: Bool].self, forKey: .published) {
+            self.published = existingPublished
+        } else {
+            // Pre-checkbox-feature post: these fields were always shown, so
+            // keep them visible rather than having them vanish on migration.
+            var defaults: [String: Bool] = [:]
+            for key in legacyKeysPresent { defaults[key] = true }
+            self.published = defaults
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(fields, forKey: .fields)
+        try c.encodeIfPresent(published, forKey: .published)
+    }
 }
 
 struct Post: Codable, Equatable {
@@ -65,21 +150,13 @@ struct PhotosData: Codable {
     var posts: [Post]
 }
 
-/// Metadata a form can edit, whether the item is new or already published.
-/// Blank string fields mean "no value" and clear the corresponding EXIF key
-/// on save — there's no separate "leave untouched" state, since the form is
-/// always fully populated before the user can submit it.
+/// What a save/publish actually changes: title/caption/date are freely
+/// editable text; the EXIF fields themselves are never user-edited (only
+/// extracted automatically), so all a user can do is choose which of the
+/// already-extracted fields get published, via `published`.
 struct PhotoMetadataInput {
     var title: String
     var caption: String
     var date: String
-    var make: String
-    var model: String
-    var lens: String
-    var aperture: String
-    var shutter: String
-    var iso: String
-    var focalLength: String
-    var dateTaken: String
-    var location: String
+    var published: [String: Bool]
 }
