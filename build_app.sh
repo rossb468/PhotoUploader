@@ -1,58 +1,43 @@
 #!/bin/bash
-# Builds PhotoUploader.app — a real, double-clickable macOS app bundle —
-# from this Swift package. Run this after making changes to the app.
+# Builds PhotoUploader.app — a real, double-clickable macOS app bundle — and
+# drops it in the repo root. Convenience wrapper around the Xcode project;
+# building in Xcode directly does the same thing.
+#
+# The bundle's Info.plist comes from project.yml (via the generated Xcode
+# project), so this script deliberately does NOT hand-roll one — that used to
+# be a second source of truth and the two had already drifted apart.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-echo "Building (release)…"
-swift build -c release
+# Keep the project in sync with project.yml when xcodegen is available, so
+# newly added source files don't silently go missing from the build.
+if command -v xcodegen >/dev/null 2>&1; then
+    echo "Regenerating Xcode project from project.yml…"
+    xcodegen generate --quiet
+fi
+
+echo "Building (Release)…"
+xcodebuild \
+    -project PhotoUploader.xcodeproj \
+    -scheme PhotoUploader \
+    -configuration Release \
+    -derivedDataPath .build/xcode \
+    build
 
 APP="PhotoUploader.app"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+# ditto (rather than cp -R) copies the bundle without dragging along the
+# Finder metadata that makes codesign refuse to sign it.
+ditto ".build/xcode/Build/Products/Release/$APP" "$APP"
 
-cp ".build/release/PhotoUploader" "$APP/Contents/MacOS/PhotoUploader"
+# Belt and braces: strip any remaining extended attributes, since a stray
+# com.apple.FinderInfo is enough to fail signing with "resource fork, Finder
+# information, or similar detritus not allowed".
+xattr -cr "$APP"
 
-cat > "$APP/Contents/Info.plist" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>PhotoUploader</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.rossbower.photouploader</string>
-    <key>CFBundleName</key>
-    <string>Photo Uploader</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>CFBundleDocumentTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleTypeName</key>
-            <string>Image</string>
-            <key>CFBundleTypeRole</key>
-            <string>Viewer</string>
-            <key>LSHandlerRank</key>
-            <string>Alternate</string>
-            <key>LSItemContentTypes</key>
-            <array>
-                <string>public.image</string>
-                <string>public.heic</string>
-            </array>
-        </dict>
-    </array>
-</dict>
-</plist>
-PLIST
-
-# Ad-hoc sign so Gatekeeper doesn't complain about an unsigned local build.
+# Xcode only applies a lightweight linker signature (Info.plist unbound,
+# resources unsealed). Re-sign ad-hoc so the bundle is properly sealed and
+# behaves when moved to /Applications.
 codesign --force --deep --sign - "$APP"
 
 echo "Built $APP"

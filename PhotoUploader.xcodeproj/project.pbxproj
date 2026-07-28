@@ -1,0 +1,389 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		092400A0239E267463F4BE41 /* ExifReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D26E30306B43F50588369FE /* ExifReader.swift */; };
+		20A328D30C5319BDB40F0C74 /* SiteModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ED93A4B31E2A0701699D179 /* SiteModels.swift */; };
+		2288F9729166E1584AC9DD93 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A5BDDA6887D7B702C795A3 /* ColorPalette.swift */; };
+		25936FEDC0891CDEF0F34C4C /* LibraryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C065FD9BBCE6572EB4DA571 /* LibraryItem.swift */; };
+		28F9F714B01CF041797749DC /* SiteGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1847C53C427603AD1A555F2 /* SiteGenerator.swift */; };
+		2CAD5517071EA67891072019 /* PhotoUploaderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3837FF9ED71067FA0739ACD /* PhotoUploaderApp.swift */; };
+		3509A420173A247437B43132 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9EFA61E4024934346207C0 /* AppDelegate.swift */; };
+		36F7A58A30A8240DD9EC4349 /* ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B233FFDCFDF64A05E966F5A /* ImageProcessor.swift */; };
+		532DBC5F836B22834956715F /* PhotoEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2257FA14A1A3C3817B8659A /* PhotoEngine.swift */; };
+		5B602DE02E721CF22510030F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF5B3B24E8CE7DAE9E42E3F /* ContentView.swift */; };
+		A4EA594518DF15F9EE4BF121 /* MetadataFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48853487410E2C8C234BBA46 /* MetadataFormView.swift */; };
+		AEE0BE5FBAEB9F76F227F136 /* FileInfoReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF575C9FFBB9363B89D262B4 /* FileInfoReader.swift */; };
+		BAE57A1585387314C14D57F6 /* SidebarRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33E493F960472AAEAB92944A /* SidebarRow.swift */; };
+		D620B30093F20313F72FBE9D /* RepoLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A47CB2E4D729D45E7671E /* RepoLocator.swift */; };
+		F2F66F3F344A196D1BB12077 /* LocationResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A3BA010AD1ED1B18D519B40 /* LocationResolver.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2A3BA010AD1ED1B18D519B40 /* LocationResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationResolver.swift; sourceTree = "<group>"; };
+		33E493F960472AAEAB92944A /* SidebarRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarRow.swift; sourceTree = "<group>"; };
+		3D26E30306B43F50588369FE /* ExifReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExifReader.swift; sourceTree = "<group>"; };
+		3D933AF716A4CFD83E7017B5 /* PhotoUploader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoUploader.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		48853487410E2C8C234BBA46 /* MetadataFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataFormView.swift; sourceTree = "<group>"; };
+		6B233FFDCFDF64A05E966F5A /* ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessor.swift; sourceTree = "<group>"; };
+		7C065FD9BBCE6572EB4DA571 /* LibraryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryItem.swift; sourceTree = "<group>"; };
+		8F9A47CB2E4D729D45E7671E /* RepoLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepoLocator.swift; sourceTree = "<group>"; };
+		8FF5B3B24E8CE7DAE9E42E3F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9ED93A4B31E2A0701699D179 /* SiteModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteModels.swift; sourceTree = "<group>"; };
+		AC9EFA61E4024934346207C0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		BF575C9FFBB9363B89D262B4 /* FileInfoReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileInfoReader.swift; sourceTree = "<group>"; };
+		D2257FA14A1A3C3817B8659A /* PhotoEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoEngine.swift; sourceTree = "<group>"; };
+		E2A5BDDA6887D7B702C795A3 /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
+		F1847C53C427603AD1A555F2 /* SiteGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteGenerator.swift; sourceTree = "<group>"; };
+		F3837FF9ED71067FA0739ACD /* PhotoUploaderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoUploaderApp.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		3DA1FD7D6E045B2B0420EC6B /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				E2A5BDDA6887D7B702C795A3 /* ColorPalette.swift */,
+				3D26E30306B43F50588369FE /* ExifReader.swift */,
+				BF575C9FFBB9363B89D262B4 /* FileInfoReader.swift */,
+				6B233FFDCFDF64A05E966F5A /* ImageProcessor.swift */,
+				2A3BA010AD1ED1B18D519B40 /* LocationResolver.swift */,
+				D2257FA14A1A3C3817B8659A /* PhotoEngine.swift */,
+				F1847C53C427603AD1A555F2 /* SiteGenerator.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		6C31694E7D63A65CB94B4904 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AC9EFA61E4024934346207C0 /* AppDelegate.swift */,
+				F3837FF9ED71067FA0739ACD /* PhotoUploaderApp.swift */,
+				8F9A47CB2E4D729D45E7671E /* RepoLocator.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		6CB938CCBDE8FAD270D0F4D4 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				7C065FD9BBCE6572EB4DA571 /* LibraryItem.swift */,
+				9ED93A4B31E2A0701699D179 /* SiteModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C8400EF769EDDDCBF1A85261 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				8FF5B3B24E8CE7DAE9E42E3F /* ContentView.swift */,
+				48853487410E2C8C234BBA46 /* MetadataFormView.swift */,
+				33E493F960472AAEAB92944A /* SidebarRow.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E9EC7490FB4F5C8B3F0820A5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3D933AF716A4CFD83E7017B5 /* PhotoUploader.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F059A99F3D756254E8A2C27C /* PhotoUploader */ = {
+			isa = PBXGroup;
+			children = (
+				6C31694E7D63A65CB94B4904 /* App */,
+				3DA1FD7D6E045B2B0420EC6B /* Engine */,
+				6CB938CCBDE8FAD270D0F4D4 /* Models */,
+				C8400EF769EDDDCBF1A85261 /* Views */,
+			);
+			name = PhotoUploader;
+			path = Sources/PhotoUploader;
+			sourceTree = "<group>";
+		};
+		FE738C8CAF332A1739772F0F = {
+			isa = PBXGroup;
+			children = (
+				F059A99F3D756254E8A2C27C /* PhotoUploader */,
+				E9EC7490FB4F5C8B3F0820A5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C216E102B6743A1C05492425 /* PhotoUploader */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EFE0516E1589478004BBE0C2 /* Build configuration list for PBXNativeTarget "PhotoUploader" */;
+			buildPhases = (
+				BD8A91AC43572EA125E12DB5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PhotoUploader;
+			packageProductDependencies = (
+			);
+			productName = PhotoUploader;
+			productReference = 3D933AF716A4CFD83E7017B5 /* PhotoUploader.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		726786A8D255E9E7370EB765 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 815CD80F789E5D96ADF742AE /* Build configuration list for PBXProject "PhotoUploader" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = FE738C8CAF332A1739772F0F;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E9EC7490FB4F5C8B3F0820A5 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C216E102B6743A1C05492425 /* PhotoUploader */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BD8A91AC43572EA125E12DB5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3509A420173A247437B43132 /* AppDelegate.swift in Sources */,
+				2288F9729166E1584AC9DD93 /* ColorPalette.swift in Sources */,
+				5B602DE02E721CF22510030F /* ContentView.swift in Sources */,
+				092400A0239E267463F4BE41 /* ExifReader.swift in Sources */,
+				AEE0BE5FBAEB9F76F227F136 /* FileInfoReader.swift in Sources */,
+				36F7A58A30A8240DD9EC4349 /* ImageProcessor.swift in Sources */,
+				25936FEDC0891CDEF0F34C4C /* LibraryItem.swift in Sources */,
+				F2F66F3F344A196D1BB12077 /* LocationResolver.swift in Sources */,
+				A4EA594518DF15F9EE4BF121 /* MetadataFormView.swift in Sources */,
+				532DBC5F836B22834956715F /* PhotoEngine.swift in Sources */,
+				2CAD5517071EA67891072019 /* PhotoUploaderApp.swift in Sources */,
+				D620B30093F20313F72FBE9D /* RepoLocator.swift in Sources */,
+				BAE57A1585387314C14D57F6 /* SidebarRow.swift in Sources */,
+				28F9F714B01CF041797749DC /* SiteGenerator.swift in Sources */,
+				20A328D30C5319BDB40F0C74 /* SiteModels.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		05594A6E1A52200F30D9339C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		3DCFEBAFFCBD71026AAC7AB6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		9530B12C2DB9270DADD8924B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Generated/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Photo Uploader";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rossbower.photouploader;
+				PRODUCT_NAME = PhotoUploader;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		B262412BADE93B5834CF3266 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Generated/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Photo Uploader";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rossbower.photouploader;
+				PRODUCT_NAME = PhotoUploader;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		815CD80F789E5D96ADF742AE /* Build configuration list for PBXProject "PhotoUploader" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DCFEBAFFCBD71026AAC7AB6 /* Debug */,
+				05594A6E1A52200F30D9339C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EFE0516E1589478004BBE0C2 /* Build configuration list for PBXNativeTarget "PhotoUploader" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B262412BADE93B5834CF3266 /* Debug */,
+				9530B12C2DB9270DADD8924B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 726786A8D255E9E7370EB765 /* Project object */;
+}

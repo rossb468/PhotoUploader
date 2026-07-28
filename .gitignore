@@ -2,3 +2,5 @@
 .build/
 .swiftpm/
 PhotoUploader.app/
+xcuserdata/
+*.xcuserdatad/
