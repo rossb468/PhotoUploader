@@ -8,6 +8,7 @@ struct MetadataFormView: View {
     let isFirst: Bool
     let isLast: Bool
     let onLoadExif: () -> Void
+    let onResolveLocation: () -> Void
     let onPrev: () -> Void
     let onNext: () -> Void
     let onSave: () -> Void
@@ -44,6 +45,9 @@ struct MetadataFormView: View {
                     Section {
                         ForEach(fields(in: group)) { field in
                             MetadataCheckRow(label: field.label, value: field.value, isPublished: publishBinding(for: field.key))
+                        }
+                        if group == "Location" && item.hasLocation {
+                            locationDisplayControl
                         }
                     } header: {
                         Label(group, systemImage: Self.groupIcons[group] ?? "tag")
@@ -82,6 +86,10 @@ struct MetadataFormView: View {
             if !item.exifLoaded {
                 onLoadExif()
             }
+            // Existing photos already have EXIF loaded, so their coordinates
+            // are ready to geocode now; new photos kick this off again once
+            // their EXIF finishes loading. Both are no-ops without coordinates.
+            onResolveLocation()
         }
         .confirmationDialog(
             "Delete this photo from the site?",
@@ -106,6 +114,59 @@ struct MetadataFormView: View {
 
     private func fields(in group: String) -> [MetadataField] {
         item.metadataFields.filter { $0.group == group }
+    }
+
+    // MARK: - Location display choice
+
+    /// Lets the user pick how the location renders on the page — raw
+    /// coordinates by default, or a reverse-geocoded street address / place
+    /// name once those resolve. Only meaningful while Location is published.
+    @ViewBuilder
+    private var locationDisplayControl: some View {
+        if item.publishedKeys.contains("location") {
+            Picker("Display as", selection: $item.locationMode) {
+                Text("Coordinates").tag(LocationMode.coordinates)
+                if item.resolvedAddress != nil {
+                    Text("Street Address").tag(LocationMode.address)
+                }
+                if item.resolvedBusiness != nil {
+                    Text("Place / Business").tag(LocationMode.business)
+                }
+            }
+            .pickerStyle(.menu)
+
+            if item.isResolvingLocation {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Looking up address…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else if item.locationResolveAttempted,
+                      item.resolvedAddress == nil, item.resolvedBusiness == nil {
+                Text("No street address or place found for these coordinates.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if item.locationMode != .coordinates, let shown = selectedLocationText {
+                HStack {
+                    Text("Publishes")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(shown)
+                        .multilineTextAlignment(.trailing)
+                }
+                .font(.caption)
+            }
+        }
+    }
+
+    /// The text that will actually publish for the current display mode.
+    private var selectedLocationText: String? {
+        switch item.locationMode {
+        case .coordinates: return item.fieldValue("location")
+        case .address: return item.resolvedAddress
+        case .business: return item.resolvedBusiness
+        }
     }
 
     private func publishBinding(for key: String) -> Binding<Bool> {

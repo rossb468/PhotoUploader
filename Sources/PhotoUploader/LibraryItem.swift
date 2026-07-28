@@ -21,6 +21,7 @@ struct MetadataSnapshot: Equatable {
     var caption: String
     var date: String
     var publishedKeys: Set<String>
+    var locationMode: LocationMode
 }
 
 /// One photo shown in the app — either an already-published post loaded from
@@ -50,6 +51,18 @@ struct LibraryItem: Identifiable, Equatable {
     var metadataFields: [MetadataField] = []
     /// Which of those fields' keys are currently checked to publish.
     var publishedKeys: Set<String> = []
+
+    /// How the photo's location displays on its page (coordinates by
+    /// default), plus the reverse-geocoded values it can switch to. These
+    /// only matter when the `location` field is present and published.
+    var locationMode: LocationMode = .coordinates
+    var resolvedAddress: String?
+    var resolvedBusiness: String?
+    /// True once reverse geocoding has finished (or was restored from a saved
+    /// post), so it isn't kicked off again. `isResolvingLocation` tracks an
+    /// in-flight lookup, purely to show progress in the form.
+    var locationResolveAttempted = false
+    var isResolvingLocation = false
 
     var width: Int?
     var height: Int?
@@ -83,6 +96,15 @@ struct LibraryItem: Identifiable, Equatable {
         self.metadataFields = post.exif.fields
         self.publishedKeys = Set(post.exif.fields.map(\.key).filter { post.exif.isPublished($0) })
 
+        if let location = post.location {
+            self.locationMode = location.mode
+            self.resolvedAddress = location.address
+            self.resolvedBusiness = location.business
+            // Already-geocoded values were saved with the post — no need to
+            // hit the network again just to re-derive them.
+            self.locationResolveAttempted = location.address != nil || location.business != nil
+        }
+
         let siteRoot = URL(fileURLWithPath: repoPath).appendingPathComponent("photography")
         self.thumbFileURL = siteRoot.appendingPathComponent(post.thumb)
         self.fullFileURL = siteRoot.appendingPathComponent(post.full)
@@ -110,6 +132,19 @@ struct LibraryItem: Identifiable, Equatable {
         metadataFields.first { $0.key == key }?.value ?? ""
     }
 
+    /// True when this photo carries GPS coordinates — the only case where the
+    /// location display choice is meaningful.
+    var hasLocation: Bool {
+        metadataFields.contains { $0.key == "location" }
+    }
+
+    /// The location display bundle to persist, or nil when the photo has no
+    /// coordinates to display in any form.
+    var locationDisplay: LocationDisplay? {
+        guard hasLocation else { return nil }
+        return LocationDisplay(mode: locationMode, address: resolvedAddress, business: resolvedBusiness)
+    }
+
     /// Builds the metadata bundle PhotoEngine's add/update calls need.
     func metadataInput() -> PhotoMetadataInput {
         let df = DateFormatter()
@@ -118,13 +153,13 @@ struct LibraryItem: Identifiable, Equatable {
         for field in metadataFields {
             published[field.key] = publishedKeys.contains(field.key)
         }
-        return PhotoMetadataInput(title: title, caption: caption, date: df.string(from: date), published: published)
+        return PhotoMetadataInput(title: title, caption: caption, date: df.string(from: date), published: published, location: locationDisplay)
     }
 
     var currentSnapshot: MetadataSnapshot {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
-        return MetadataSnapshot(title: title, caption: caption, date: df.string(from: date), publishedKeys: publishedKeys)
+        return MetadataSnapshot(title: title, caption: caption, date: df.string(from: date), publishedKeys: publishedKeys, locationMode: locationMode)
     }
 
     /// True only for existing posts with unsaved edits. New (unpublished)

@@ -1,7 +1,10 @@
 import Foundation
 
-// Mirrors the schema previously written by tools/photogen.py's
-// photography/data/photos.json, so the existing library decodes unchanged.
+// The on-disk schema for the photography site's photography/data/photos.json,
+// which is the source of truth for the whole generated site. Several fields
+// are optional purely for backward compatibility: this format predates the
+// app (it was originally produced by a Python generator), and posts written
+// by older versions must keep decoding without a migration step.
 
 struct Swatch: Codable, Equatable {
     var hex: String
@@ -124,6 +127,34 @@ struct PostExif: Codable, Equatable {
     }
 }
 
+/// Which representation of a photo's location renders on its public page.
+/// The raw GPS coordinates always exist (in the EXIF `location` field); the
+/// other two are best-effort reverse-geocoding results.
+enum LocationMode: String, Codable, Equatable, CaseIterable {
+    case coordinates
+    case address
+    case business
+}
+
+/// A photo's location display choice plus the reverse-geocoded values it can
+/// choose from. Kept separate from `PostExif.fields` so re-extracting EXIF
+/// from a photo's original file never clobbers the geocoded results (which
+/// aren't in the file's metadata). Optional on `Post`: photos with no GPS
+/// data, and posts published before this feature, simply have none.
+struct LocationDisplay: Codable, Equatable {
+    var mode: LocationMode
+    /// Resolved street address, if the coordinates mapped to one.
+    var address: String?
+    /// Resolved business / point-of-interest name, if any.
+    var business: String?
+
+    init(mode: LocationMode = .coordinates, address: String? = nil, business: String? = nil) {
+        self.mode = mode
+        self.address = address
+        self.business = business
+    }
+}
+
 struct Post: Codable, Equatable {
     var slug: String
     var date: String
@@ -144,6 +175,11 @@ struct Post: Codable, Equatable {
     var original: String?
     var exif: PostExif
     var palette: Palette
+    /// How the photo's location renders, plus the geocoded address/business
+    /// it can display. Absent for photos with no GPS coordinates and for
+    /// posts published before this feature existed (which default to showing
+    /// raw coordinates).
+    var location: LocationDisplay?
 }
 
 struct PhotosData: Codable {
@@ -159,4 +195,7 @@ struct PhotoMetadataInput {
     var caption: String
     var date: String
     var published: [String: Bool]
+    /// The chosen location display and its geocoded values, or nil when the
+    /// photo has no GPS coordinates.
+    var location: LocationDisplay?
 }

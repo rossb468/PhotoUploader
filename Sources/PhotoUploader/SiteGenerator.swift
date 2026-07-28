@@ -153,7 +153,7 @@ enum SiteGenerator {
     /// other published field — however many there are — gets a plain row,
     /// so a user checking a box for a field this function's never heard of
     /// still shows up correctly.
-    private static func renderExif(_ exif: PostExif) -> String {
+    private static func renderExif(_ exif: PostExif, location: LocationDisplay?) -> String {
         func row(_ label: String, _ value: String) -> String {
             "                <div class=\"exif-item\"><span class=\"exif-label\">\(label.htmlEscaped)</span><span>\(value.htmlEscaped)</span></div>"
         }
@@ -170,12 +170,31 @@ enum SiteGenerator {
             rows.append(row(field.label, field.value))
         }
 
-        if exif.isPublished("location"), let location = exif.value("location") {
-            let mapsURL = "https://maps.apple.com/?ll=" + location.replacingOccurrences(of: " ", with: "")
+        if exif.isPublished("location"), let coordinates = exif.value("location") {
+            // Coordinates are the default; a street address or business name
+            // replaces them as the visible text when the user chose one and
+            // it actually resolved. The pin still centres on the real
+            // coordinates either way.
+            let mode = location?.mode ?? .coordinates
+            let displayText: String
+            switch mode {
+            case .coordinates: displayText = coordinates
+            case .address: displayText = location?.address ?? coordinates
+            case .business: displayText = location?.business ?? coordinates
+            }
+
+            let ll = coordinates.replacingOccurrences(of: " ", with: "")
+            var mapsURL = "https://maps.apple.com/?ll=" + ll
+            if displayText != coordinates,
+               let query = displayText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                // Label the dropped pin with the place name rather than a bare point.
+                mapsURL += "&q=" + query
+            }
+
             rows.append(
                 "                <div class=\"exif-item\"><span class=\"exif-label\">Location</span>"
                 + "<span><a href=\"\(mapsURL.htmlEscaped)\" target=\"_blank\" rel=\"noopener\">"
-                + "\(location.htmlEscaped)</a></span></div>"
+                + "\(displayText.htmlEscaped)</a></span></div>"
             )
         }
 
@@ -216,7 +235,7 @@ enum SiteGenerator {
         let captionHTML = post.caption.isEmpty ? "" : "<p class=\"caption\">\(post.caption.htmlEscaped)</p>"
         let publishedDateTaken = post.exif.isPublished("date_taken") ? post.exif.value("date_taken") : nil
         let dateDisplay = String((publishedDateTaken ?? post.date).prefix(10))
-        let exifHTML = renderExif(post.exif)
+        let exifHTML = renderExif(post.exif, location: post.location)
         let swatchHTML = renderSwatchRow(post)
         let downloadHTML = renderDownloads(post)
 

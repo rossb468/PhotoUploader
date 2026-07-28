@@ -157,6 +157,7 @@ struct ContentView: View {
                 isFirst: navIdx == 0,
                 isLast: navIdx == orderedForNav.count - 1,
                 onLoadExif: { loadExif(for: id) },
+                onResolveLocation: { resolveLocation(for: id) },
                 onPrev: goPrev,
                 onNext: goNext,
                 onSave: { saveItem(id) },
@@ -271,6 +272,33 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 guard let idx2 = items.firstIndex(where: { $0.id == id }) else { return }
                 items[idx2].applyExtractedExif(info)
+                // Coordinates only exist now that EXIF has landed — kick off
+                // the reverse-geocode the form couldn't start on first appear.
+                resolveLocation(for: id)
+            }
+        }
+    }
+
+    // MARK: - Reverse geocoding a photo's coordinates
+
+    /// Turns a photo's GPS coordinates into a street address / place name so
+    /// the user can choose to display those instead of raw coordinates. Runs
+    /// once per item; no-op without coordinates or if already resolved.
+    private func resolveLocation(for id: LibraryItem.ID) {
+        guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
+        guard !items[idx].locationResolveAttempted, !items[idx].isResolvingLocation else { return }
+        let coordinateString = items[idx].fieldValue("location")
+        guard !coordinateString.isEmpty else { return }
+        items[idx].isResolvingLocation = true
+
+        Task {
+            let resolved = await LocationResolver.resolve(coordinateString: coordinateString)
+            await MainActor.run {
+                guard let idx2 = items.firstIndex(where: { $0.id == id }) else { return }
+                items[idx2].resolvedAddress = resolved.address
+                items[idx2].resolvedBusiness = resolved.business
+                items[idx2].isResolvingLocation = false
+                items[idx2].locationResolveAttempted = true
             }
         }
     }

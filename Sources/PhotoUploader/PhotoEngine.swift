@@ -161,7 +161,8 @@ enum PhotoEngine {
             medium: processed.mediumRelativePath,
             original: processed.originalRelativePath,
             exif: exif,
-            palette: palette
+            palette: palette,
+            location: input.location
         )
         data.posts.append(post)
         try save(data, repoPath: repoPath)
@@ -183,6 +184,7 @@ enum PhotoEngine {
         }
         refreshExifValuesFromOriginal(&data.posts[idx], repoPath: repoPath)
         applyPublishFlags(&data.posts[idx].exif, input)
+        data.posts[idx].location = input.location
 
         if data.posts[idx].medium == nil || data.posts[idx].small == nil {
             let root = SiteGenerator.siteRoot(repoPath: repoPath)
